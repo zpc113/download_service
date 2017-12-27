@@ -62,26 +62,40 @@ public class MessageReceiver implements MessageListener {
                 List<Request> requests = restTemplate.getForObject("http://localhost:8080/queue/{queueName}/get" ,
                         List.class , orderMessage.getContainerName());
                 ExecutorService executorService = executorsPool.getExecutors().get(orderMessage.getContainerName());
-                for (final Request request : requests) {
-                    executorService.execute(new Runnable() {
-                        public void run() {
-                            OrderMessage orderMessageDownload = new OrderMessage();
-                            orderMessageDownload.setContainerName(orderMessage.getContainerName());
-                            orderMessageDownload.setRequest(request);
-                            downloadService.download(orderMessageDownload);
-                        }
-                    });
+                if (executorService != null) {
+                    for (final Request request : requests) {
+                        executorService.execute(new Runnable() {
+                            public void run() {
+                                OrderMessage orderMessageDownload = new OrderMessage();
+                                orderMessageDownload.setContainerName(orderMessage.getContainerName());
+                                orderMessageDownload.setRequest(request);
+                                downloadService.download(orderMessageDownload);
+                            }
+                        });
+                    }
+                    // 通知解析服务器从数据库中获取页面进行解析
+                    OrderMessage orderMessageToParse = new OrderMessage();
+                    orderMessageToParse.setContainerName(orderMessage.getContainerName());
+                    orderMessageToParse.setOrder(ControlExecutorOrder.PARSE);
+                    sendMessage.sendParseMessage(orderMessageToParse , RoutingKey.PARSESERVICE_ROUTINGKEY);
                 }
-                // 通知解析服务器从数据库中获取页面进行解析
-                OrderMessage orderMessageToParse = new OrderMessage();
-                orderMessageToParse.setContainerName(orderMessage.getContainerName());
-                orderMessageToParse.setOrder(ControlExecutorOrder.PARSE);
-                sendMessage.sendParseMessage(orderMessageToParse , RoutingKey.PARSESERVICE_ROUTINGKEY);
-            }else if (ControlExecutorOrder.DESTROY.equals(order)) {
+            } else if (ControlExecutorOrder.SUSPEND.equals(order)) {
+                // 销毁线程池
+                String containerName = orderMessage.getContainerName();
+                ExecutorService executorService = executorsPool.getExecutors().get(containerName);
+                // 将线程池移除线程池管理器
+                executorsPool.getExecutors().remove(containerName);
+                // 停掉线程池
+                executorService.shutdown();
+                logger.info("线程池已销毁" + containerName);
+            } else if (ControlExecutorOrder.DESTROY.equals(order)) {
                 // 收到暂停或停止指令，销毁线程池
                 String containerName = orderMessage.getContainerName();
-                executorsPool.getExecutors().get(containerName).shutdownNow();
+                ExecutorService executorService = executorsPool.getExecutors().get(containerName);
+                // 将线程池移除线程池管理器
                 executorsPool.getExecutors().remove(containerName);
+                // 停掉线程池
+                executorService.shutdownNow();
                 logger.info("线程池已销毁" + containerName);
             }
         } catch (Exception e) {
