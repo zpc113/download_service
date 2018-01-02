@@ -14,4 +14,8 @@
 
     </update>
 
+    <select id="getTableSize" resultType="int" parameterType="String">
+        SELECT COUNT(1) FROM $(tableName);
+    </select>
+
 </mapper>

@@ -15,6 +15,8 @@ import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -155,5 +157,37 @@ public class DownloadServiceImpl implements DownloadService{
         }
         return connection;
     }
+
+    public static void main(String[] args) throws IOException {
+        String url = "http://www.hao6v.com/mj/2015-02-24/24863.html";
+        Connection connection = Jsoup.connect(url);
+        Document document = connection.get();
+        Elements elements = document.getElementsByTag("table");
+
+        for (Element element : elements) {
+            Elements trs = element.getElementsByTag("tr");
+            for (int i = 1 ; i < trs.size() ; i ++) {
+                Element tr = trs.get(i);
+                if (i == 0) continue;
+                String href = tr.getElementsByTag("td").get(0).getElementsByTag("a").attr("href");
+                System.out.println(href);
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }

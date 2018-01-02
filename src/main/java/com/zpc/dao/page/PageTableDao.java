@@ -9,4 +9,5 @@ public interface PageTableDao {
 
     void createTable(@Param("tableName") String tableName);
 
+    int getTableSize(@Param("tableName") String tableName);
 }

@@ -20,4 +20,7 @@ public class ControlExecutorOrder {
 
     public static final String PARSE = "parse";   // 解析页面指令
 
+    public static final String COMPLETE = "complete";   // 任务完成指令
+
+    public static final String RECOVER = "recover"; // 恢复线程池
 }
